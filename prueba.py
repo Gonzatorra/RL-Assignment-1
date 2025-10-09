@@ -9,8 +9,9 @@ class FrozenLake8x8Env(gym.Env):
     def __init__(self):
         super().__init__()
         self.grid_size = 8
+        self.cell_size = 100
         
-        #Grid: S=Start, N=Nothing, M=Meteorite, G=Goal, P=Palm
+        # Grid: S=Start, N=Nothing, M=Meteorite, G=Goal, P=Palm
         self.grid = np.array([
             ['S','N','N','M','N','N','P','N'],
             ['N','M','N','N','M','N','N','N'],
@@ -26,9 +27,18 @@ class FrozenLake8x8Env(gym.Env):
         self.observation_space = spaces.Discrete(self.grid_size * self.grid_size)
         self.agent_pos = (0,0)
         
+        # Pygame variables
         self.screen = None
-        self.cell_size = 100
         self.clock = None
+        
+        # Cargar imágenes y escalarlas
+        self.images = {
+            'S': pygame.transform.scale(pygame.image.load("imagenes/grass.png"), (self.cell_size, self.cell_size)),
+            'M': pygame.transform.scale(pygame.image.load("imagenes/meteorito.png"), (self.cell_size, self.cell_size)),
+            'G': pygame.transform.scale(pygame.image.load("imagenes/cueva.png"), (self.cell_size, self.cell_size)),
+            'P': pygame.transform.scale(pygame.image.load("imagenes/palmera.png"), (self.cell_size, self.cell_size))
+        }
+        self.agent_img = pygame.transform.scale(pygame.image.load("imagenes/dino.png"), (self.cell_size, self.cell_size))
         
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -65,27 +75,36 @@ class FrozenLake8x8Env(gym.Env):
             pygame.display.set_caption("FrozenLake 8x8")
             self.clock = pygame.time.Clock()
         
-        COLORS = {
-            'N': (0,255,0),  # light blue
-        }
-
-        self.images = {
-            'S': pygame.image.load("imagenes/grass.png"),
-            'M': pygame.image.load("imagenes/meteorito.png"),
-            'G': pygame.image.load("imagenes/cueva.png"),
-            'P': pygame.image.load("imagenes/palmera.png")
-        }
-        self.agent_img = pygame.image.load("imagenes/dino.png")
-        
+        # Dibujar grid
         for i in range(self.grid_size):
             for j in range(self.grid_size):
                 rect = pygame.Rect(j*self.cell_size, i*self.cell_size, self.cell_size, self.cell_size)
-                pygame.draw.rect(self.screen, COLORS[self.grid[i,j]], rect)
-                pygame.draw.rect(self.screen, (255,255,255), rect, 1)
+                cell_type = self.grid[i,j]
+                
+                # Dibujar color de fondo
+                if cell_type == 'N':
+                    pygame.draw.rect(self.screen, (114, 184, 68), rect)  # verde claro
+                elif cell_type == "M":
+                    pygame.draw.rect(self.screen, (94, 170, 246), rect)  # azul
+                elif cell_type == "P":
+                    pygame.draw.rect(self.screen, (57, 119, 22), rect)  # verde oscuro
+                else:
+                    pygame.draw.rect(self.screen, (0,0,0), rect)  # gris neutro para S,G
+
+                # Dibujar imagen SOLO para palmeras
+                if cell_type == "P":
+                    self.screen.blit(self.images[cell_type], rect)
+
+                # Luego dibujar imagen encima si existe
+                if cell_type in self.images:
+                    self.screen.blit(self.images[cell_type], rect)
+                
+                pygame.draw.rect(self.screen, (255,255,255), rect, 1)  # borde blanco
         
+        # Dibujar agente
         ai,aj = self.agent_pos
         agent_rect = pygame.Rect(aj*self.cell_size, ai*self.cell_size, self.cell_size, self.cell_size)
-        pygame.draw.rect(self.screen, AGENT_COLOR, agent_rect)
+        self.screen.blit(self.agent_img, agent_rect)
         
         pygame.display.flip()
         self.clock.tick(5)
@@ -96,6 +115,9 @@ class FrozenLake8x8Env(gym.Env):
             self.screen = None
 
 
+# ---------------------
+# Probar el environment
+# ---------------------
 env = FrozenLake8x8Env()
 state,_ = env.reset()
 done = False
