@@ -60,6 +60,133 @@ def plot_policy(environment, Q, plot_name, grid_idx):
     plt.close(fig)
 
 
+#PLOT REWARDS/ALGORITHMS
+window = 50  # ventana para suavizar la curva
+
+def smooth(x, w=window):
+    return [np.mean(x[max(0,i-w):i+1]) for i in range(len(x))]
+
+
+def print_rewards_algorithms(q, mc, sarsa):
+    plt.figure(figsize=(10,6))
+    plt.plot(smooth(q), label="Q-learning")
+    plt.plot(smooth(mc), label="Monte Carlo")
+    plt.plot(smooth(sarsa), label="SARSA")
+    plt.xlabel("Episodio")
+    plt.ylabel(f"Recompensa total (promedio últimos {window})")
+    plt.title("Algorithm comparison")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("rewards_comparison.png", bbox_inches='tight')
+    plt.close() 
+
+
+
+
+
+
+#ALGORITMOS
+episodes = 2000
+
+def q_learning():
+    # Q-learning
+    Q_q = np.zeros((env.observation_space.n, env.action_space.n))
+    q_rewards = []
+
+    for ep in range(episodes):
+        state, _ = env.reset()
+        done = False
+        total_reward = 0
+        while not done:
+            if random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(Q_q[state])
+            next_state, reward, done, _, _ = env.step(action)
+            best_next = np.argmax(Q_q[next_state])
+            Q_q[state, action] += alpha * (reward + gamma * Q_q[next_state, best_next] - Q_q[state, action])
+            state = next_state
+            total_reward += reward
+        q_rewards.append(total_reward)
+
+    return q_rewards
+
+
+#MONTECARLO
+def montecarlo():  
+    Q_mc = np.zeros((env.observation_space.n, env.action_space.n))
+    returns = {}
+    mc_rewards = []
+
+    for ep in range(episodes):
+        episode = []
+        state, _ = env.reset()
+        done = False
+        total_reward = 0  # <-- acumular recompensa por episodio
+        
+        while not done:
+            if random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(Q_mc[state])
+            next_state, reward, done, _, _ = env.step(action)
+            episode.append((state, action, reward))
+            state = next_state
+            total_reward += reward  # <-- sumar recompensa
+        
+        # Actualización de Q (Every-visit MC)
+        G = 0
+        for t in reversed(range(len(episode))):
+            state, action, reward = episode[t]
+            G = gamma * G + reward
+            key = (state, action)
+            if key not in returns:
+                returns[key] = []
+            returns[key].append(G)
+            Q_mc[state, action] = np.mean(returns[key])
+        
+        mc_rewards.append(total_reward)  # <-- guardar recompensa total del episodio
+    
+    return mc_rewards
+    
+
+
+#SARSA
+# Inicialización
+
+def SARSA():
+    Q_sarsa = np.zeros((env.observation_space.n, env.action_space.n))
+    sarsa_rewards = []
+
+    for ep in range(episodes):
+        state, _ = env.reset()
+        done = False
+        total_reward = 0  # <-- acumular recompensa
+        
+        # Acción inicial (epsilon-greedy)
+        if random.random() < epsilon:
+            action = env.action_space.sample()
+        else:
+            action = np.argmax(Q_sarsa[state])
+        
+        while not done:
+            next_state, reward, done, _, _ = env.step(action)
+            total_reward += reward  # <-- sumar recompensa
+            
+            # Siguiente acción (epsilon-greedy)
+            if random.random() < epsilon:
+                next_action = env.action_space.sample()
+            else:
+                next_action = np.argmax(Q_sarsa[next_state])
+            
+            # Actualizar Q
+            Q_sarsa[state, action] += alpha * (reward + gamma * Q_sarsa[next_state, next_action] - Q_sarsa[state, action])
+            
+            state, action = next_state, next_action
+        
+        sarsa_rewards.append(total_reward)  # <-- guardar recompensa total del episodio
+    return sarsa_rewards
+
 
 class FrozenLake8x8Env(gym.Env):
     metadata = {'render_modes': ['pygame'], 'render_fps': 5}
