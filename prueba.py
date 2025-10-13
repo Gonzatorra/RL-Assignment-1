@@ -17,13 +17,17 @@ action_arrows = {
     3: '←' 
 }
 
-def plot_policy(environment, Q, plot_name, grid_idx):
-    grid = environment.original_grid  #Get the original grid to paint it
+def plot_policy(grid, Q, plot_name, grid_idx):
+    """
+    grid: np.array, el grid que quieres usar
+    Q: np.array, tabla Q entrenada para ese grid
+    plot_name: str, nombre del archivo a guardar
+    grid_idx: int, índice del grid para el título
+    """
     grid_size = grid.shape[0]
-
     fig, ax = plt.subplots(figsize=(8,8))
 
-    #Paint the grid
+    # Pintar el grid
     for i in range(grid_size):
         for j in range(grid_size):
             cell = grid[i, j]
@@ -39,12 +43,12 @@ def plot_policy(environment, Q, plot_name, grid_idx):
             else:
                 rect.set_facecolor('#000000')
 
-            #Get the optimal policy
+            # Obtener la acción óptima
             state = i * grid_size + j
             best_action = np.argmax(Q[state])
             arrow = action_arrows[best_action]
 
-            #Paint arrows
+            # Pintar flechas
             ax.text(j + 0.5, i + 0.5, arrow, ha='center', va='center', fontsize=18, color='red')
 
     # Ajustes del gráfico
@@ -52,16 +56,17 @@ def plot_policy(environment, Q, plot_name, grid_idx):
     ax.set_ylim(0, grid_size)
     ax.set_aspect('equal')
     ax.invert_yaxis()
-    plt.title("Optimal policy" + str(grid_idx), fontsize=16)
+    plt.title("Optimal policy Grid " + str(grid_idx), fontsize=16)
 
-    #Save and close
+    # Guardar
     plt.savefig(plot_name + ".png", bbox_inches='tight')
-    print(f"Policy saved as {plot_name}.png")
     plt.close(fig)
+    print(f"Policy saved as {plot_name}.png")
+
 
 
 #PLOT REWARDS/ALGORITHMS
-window = 50  # ventana para suavizar la curva
+window = 1000  # ventana para suavizar la curva
 
 def smooth(x, w=window):
     return [np.mean(x[max(0,i-w):i+1]) for i in range(len(x))]
@@ -86,13 +91,11 @@ def print_rewards_algorithms(q, mc, sarsa):
 
 
 #ALGORITMOS
-episodes = 2000
+episodes = 6000
 
-def q_learning():
-    # Q-learning
+def q_learning(env, alpha, gamma, epsilon, episodes):
     Q_q = np.zeros((env.observation_space.n, env.action_space.n))
     q_rewards = []
-
     for ep in range(episodes):
         state, _ = env.reset()
         done = False
@@ -108,12 +111,11 @@ def q_learning():
             state = next_state
             total_reward += reward
         q_rewards.append(total_reward)
-
-    return q_rewards
+    return Q_q, q_rewards
 
 
 #MONTECARLO
-def montecarlo():  
+def montecarlo(env, alpha, gamma, epsilon, episodes):  
     Q_mc = np.zeros((env.observation_space.n, env.action_space.n))
     returns = {}
     mc_rewards = []
@@ -122,19 +124,21 @@ def montecarlo():
         episode = []
         state, _ = env.reset()
         done = False
-        total_reward = 0  # <-- acumular recompensa por episodio
+        total_reward = 0
         
         while not done:
+            # Epsilon-greedy
             if random.random() < epsilon:
                 action = env.action_space.sample()
             else:
                 action = np.argmax(Q_mc[state])
+            
             next_state, reward, done, _, _ = env.step(action)
             episode.append((state, action, reward))
             state = next_state
-            total_reward += reward  # <-- sumar recompensa
+            total_reward += reward
         
-        # Actualización de Q (Every-visit MC)
+        # Actualización Q (Every-visit MC)
         G = 0
         for t in reversed(range(len(episode))):
             state, action, reward = episode[t]
@@ -145,23 +149,21 @@ def montecarlo():
             returns[key].append(G)
             Q_mc[state, action] = np.mean(returns[key])
         
-        mc_rewards.append(total_reward)  # <-- guardar recompensa total del episodio
+        mc_rewards.append(total_reward)
     
-    return mc_rewards
+    return Q_mc, mc_rewards
     
 
 
 #SARSA
-# Inicialización
-
-def SARSA():
+def SARSA(env, alpha, gamma, epsilon, episodes):
     Q_sarsa = np.zeros((env.observation_space.n, env.action_space.n))
     sarsa_rewards = []
 
     for ep in range(episodes):
         state, _ = env.reset()
         done = False
-        total_reward = 0  # <-- acumular recompensa
+        total_reward = 0
         
         # Acción inicial (epsilon-greedy)
         if random.random() < epsilon:
@@ -171,7 +173,7 @@ def SARSA():
         
         while not done:
             next_state, reward, done, _, _ = env.step(action)
-            total_reward += reward  # <-- sumar recompensa
+            total_reward += reward
             
             # Siguiente acción (epsilon-greedy)
             if random.random() < epsilon:
@@ -184,8 +186,11 @@ def SARSA():
             
             state, action = next_state, next_action
         
-        sarsa_rewards.append(total_reward)  # <-- guardar recompensa total del episodio
-    return sarsa_rewards
+        sarsa_rewards.append(total_reward)
+    
+    return Q_sarsa, sarsa_rewards
+
+
 
 
 class FrozenLake8x8Env(gym.Env):
@@ -390,121 +395,181 @@ class FrozenLake8x8Env(gym.Env):
 # ---------------------
 # Entrenamiento SECUENCIAL con reinicio de Q-table
 # ---------------------
+#env = FrozenLake8x8Env()
+#
+## Parámetros Q-learning
+#alpha = 0.2
+#gamma = 0.95
+#epsilon = 1.0
+#epsilon_min = 0.05
+#epsilon_decay = 0.998
+#episodes_per_grid = 6000  # Episodios por grid
+#
+## Almacenar resultados por grid
+#grid_results = []
+#
+#print(f"Entrenando secuencialmente en {len(env.grid_list)} grids diferentes...")
+#
+## Para cada grid, entrenar desde cero
+#for grid_idx in range(len(env.grid_list)):
+#    print(f"\n=== COMENZANDO ENTRENAMIENTO EN GRID {grid_idx+1} ===")
+#    
+#    # Establecer el grid actual
+#    env.set_grid(grid_idx)
+#    
+#    # REINICIAR la tabla Q para este grid (empezar desde cero)
+#    Q = np.random.uniform(-0.1, 0.1, (env.observation_space.n, env.action_space.n))
+#    
+#    # Reiniciar parámetros de exploración
+#    epsilon = 1.0
+#    rewards = []
+#    success_count = 0
+#    
+#    # Entrenar en este grid específico
+#    for ep in range(episodes_per_grid):
+#        state, _ = env.reset()
+#        done = False
+#        total_reward = 0
+#        steps = 0
+#        
+#        while not done and steps < 100:
+#            # Epsilon-greedy
+#            if random.uniform(0,1) < epsilon:
+#                action = env.action_space.sample()
+#            else:
+#                action = np.argmax(Q[state])
+#            
+#            next_state, reward, done, _, _ = env.step(action)
+#            
+#            # Actualizar Q
+#            best_next_action = np.argmax(Q[next_state])
+#            td_target = reward + gamma * Q[next_state, best_next_action]
+#            td_error = td_target - Q[state, action]
+#            Q[state, action] += alpha * td_error
+#            
+#            state = next_state
+#            total_reward += reward
+#            steps += 1
+#            
+#            # Contar éxitos
+#            if done and reward > 0:
+#                success_count += 1
+#        
+#        # Decaimiento de epsilon
+#        epsilon = max(epsilon_min, epsilon * epsilon_decay)
+#        rewards.append(total_reward)
+#        
+#        # Mostrar progreso cada 500 episodios
+#        if ep % 500 == 0:
+#            avg_reward = np.mean(rewards[-100:]) if len(rewards) >= 100 else np.mean(rewards)
+#            success_rate = success_count / 500 if ep > 0 else 0
+#            print(f"Grid {grid_idx+1}, Episodio {ep}: Recompensa promedio = {avg_reward:.2f}, Éxitos = {success_count}, Epsilon = {epsilon:.3f}")
+#            success_count = 0
+#    
+#    # Guardar resultados de este grid
+#    final_avg = np.mean(rewards[-100:]) if len(rewards) >= 100 else np.mean(rewards)
+#    grid_results.append({
+#        'grid_idx': grid_idx,
+#        'final_avg_reward': final_avg,
+#        'Q_table': Q.copy()  # Guardar la Q-table aprendida para este grid
+#    })
+#    
+#    print(f"\n--- ENTRENAMIENTO COMPLETADO PARA GRID {grid_idx+1} ---")
+#    print(f"Recompensa promedio últimos 100 episodios: {final_avg:.2f}")
+#    
+#    # Demostrar el agente en este grid inmediatamente después del entrenamiento
+#    print(f"\nDemostración en Grid {grid_idx+1}:")
+#    env.set_grid(grid_idx)  # Asegurarse de que estamos en el grid correcto
+#    obs = env._get_state()
+#    done = False
+#    steps = 0
+#    
+#    while not done and steps < 50:
+#        action = np.argmax(Q[obs])  # política greedy
+#        obs, reward, done, _, _ = env.step(action)
+#        env.render()
+#        time.sleep(0.3)
+#        steps += 1
+#        
+#        if done:
+#            if reward > 0:
+#                print(f"¡Éxito! Recompensa: {reward}")
+#            else:
+#                print(f"Fracaso. Recompensa: {reward}")
+#            break
+#    
+#    if not done:
+#        print(f"Tiempo agotado después de {steps} pasos")
+#    
+#    plot_policy(env, Q, "plot"+ str(grid_idx), grid_idx)
+#
+## Resumen final
+#print("\n" + "="*50)
+#print("RESUMEN FINAL DEL ENTRENAMIENTO")
+#print("="*50)
+#for result in grid_results:
+#    print(f"Grid {result['grid_idx']+1}: Recompensa promedio = {result['final_avg_reward']:.2f}")
+#
+#env.close()
+
+
+# ------------------------
+# Bucle principal por grid
+# ------------------------
+grid_results = []
+
 env = FrozenLake8x8Env()
 
-# Parámetros Q-learning
 alpha = 0.2
 gamma = 0.95
 epsilon = 1.0
 epsilon_min = 0.05
 epsilon_decay = 0.998
-episodes_per_grid = 6000  # Episodios por grid
+episodes_per_grid = 1000  # Episodios por grid
 
-# Almacenar resultados por grid
-grid_results = []
-
-print(f"Entrenando secuencialmente en {len(env.grid_list)} grids diferentes...")
-
-# Para cada grid, entrenar desde cero
 for grid_idx in range(len(env.grid_list)):
-    print(f"\n=== COMENZANDO ENTRENAMIENTO EN GRID {grid_idx+1} ===")
-    
-    # Establecer el grid actual
+    print(f"\n=== GRID {grid_idx+1} ===")
     env.set_grid(grid_idx)
-    
-    # REINICIAR la tabla Q para este grid (empezar desde cero)
-    Q = np.random.uniform(-0.1, 0.1, (env.observation_space.n, env.action_space.n))
-    
-    # Reiniciar parámetros de exploración
-    epsilon = 1.0
-    rewards = []
-    success_count = 0
-    
-    # Entrenar en este grid específico
-    for ep in range(episodes_per_grid):
-        state, _ = env.reset()
-        done = False
-        total_reward = 0
-        steps = 0
-        
-        while not done and steps < 100:
-            # Epsilon-greedy
-            if random.uniform(0,1) < epsilon:
-                action = env.action_space.sample()
-            else:
-                action = np.argmax(Q[state])
-            
-            next_state, reward, done, _, _ = env.step(action)
-            
-            # Actualizar Q
-            best_next_action = np.argmax(Q[next_state])
-            td_target = reward + gamma * Q[next_state, best_next_action]
-            td_error = td_target - Q[state, action]
-            Q[state, action] += alpha * td_error
-            
-            state = next_state
-            total_reward += reward
-            steps += 1
-            
-            # Contar éxitos
-            if done and reward > 0:
-                success_count += 1
-        
-        # Decaimiento de epsilon
-        epsilon = max(epsilon_min, epsilon * epsilon_decay)
-        rewards.append(total_reward)
-        
-        # Mostrar progreso cada 500 episodios
-        if ep % 500 == 0:
-            avg_reward = np.mean(rewards[-100:]) if len(rewards) >= 100 else np.mean(rewards)
-            success_rate = success_count / 500 if ep > 0 else 0
-            print(f"Grid {grid_idx+1}, Episodio {ep}: Recompensa promedio = {avg_reward:.2f}, Éxitos = {success_count}, Epsilon = {epsilon:.3f}")
-            success_count = 0
-    
-    # Guardar resultados de este grid
-    final_avg = np.mean(rewards[-100:]) if len(rewards) >= 100 else np.mean(rewards)
+
+    results_algos = {}
+    for algo_name, algo_func in [('Q-learning', q_learning), ('MonteCarlo', montecarlo), ('SARSA', SARSA)]:
+        print(f"\nEntrenando {algo_name} en Grid {grid_idx+1}...")
+        Q, rewards = algo_func(env, alpha, gamma, epsilon, episodes_per_grid)
+        results_algos[algo_name] = {'Q': Q, 'rewards': rewards}
+
+        # Plot de política
+        grid = env.grid_list[grid_idx]  # obtienes el grid actual
+        plot_policy(grid, Q, f"{algo_name}_grid{grid_idx}", grid_idx)
+    # Guardar resultados del grid
     grid_results.append({
         'grid_idx': grid_idx,
-        'final_avg_reward': final_avg,
-        'Q_table': Q.copy()  # Guardar la Q-table aprendida para este grid
+        'results': results_algos
     })
-    
-    print(f"\n--- ENTRENAMIENTO COMPLETADO PARA GRID {grid_idx+1} ---")
-    print(f"Recompensa promedio últimos 100 episodios: {final_avg:.2f}")
-    
-    # Demostrar el agente en este grid inmediatamente después del entrenamiento
-    print(f"\nDemostración en Grid {grid_idx+1}:")
-    env.set_grid(grid_idx)  # Asegurarse de que estamos en el grid correcto
-    obs = env._get_state()
-    done = False
-    steps = 0
-    
-    while not done and steps < 50:
-        action = np.argmax(Q[obs])  # política greedy
-        obs, reward, done, _, _ = env.step(action)
-        env.render()
-        time.sleep(0.3)
-        steps += 1
-        
-        if done:
-            if reward > 0:
-                print(f"¡Éxito! Recompensa: {reward}")
-            else:
-                print(f"Fracaso. Recompensa: {reward}")
-            break
-    
-    if not done:
-        print(f"Tiempo agotado después de {steps} pasos")
-    
-    plot_policy(env, Q, "plot"+ str(grid_idx), grid_idx)
 
-# Resumen final
+    # Plot comparativo de recompensas
+    plt.figure(figsize=(10,6))
+    for algo_name in results_algos:
+        plt.plot(smooth(results_algos[algo_name]['rewards']), label=algo_name)
+    plt.xlabel("Episodio")
+    plt.ylabel(f"Recompensa total (promedio últimos {window})")
+    plt.title(f"Grid {grid_idx+1} - Comparación de algoritmos")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"rewards_comparison_grid{grid_idx}.png", dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Plots de recompensas guardados para Grid {grid_idx+1}")
+
+# ------------------------
+# Resumen final de todos los grids
+# ------------------------
 print("\n" + "="*50)
 print("RESUMEN FINAL DEL ENTRENAMIENTO")
 print("="*50)
 for result in grid_results:
-    print(f"Grid {result['grid_idx']+1}: Recompensa promedio = {result['final_avg_reward']:.2f}")
+    idx = result['grid_idx']
+    print(f"\nGrid {idx+1}:")
+    for algo_name, data in result['results'].items():
+        avg_reward = np.mean(data['rewards'][-100:])
+        print(f"  {algo_name}: Recompensa promedio últimos 100 episodios = {avg_reward:.2f}")
 
 env.close()
-
-
