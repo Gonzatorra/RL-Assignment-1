@@ -4,6 +4,62 @@ import numpy as np
 import pygame
 import random
 import time
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+
+#PLOT FOR POLICY
+action_arrows = {
+    0: '↑',
+    1: '→',
+    2: '↓',
+    3: '←' 
+}
+
+def plot_policy(environment, Q, plot_name, grid_idx):
+    grid = environment.original_grid  #Get the original grid to paint it
+    grid_size = grid.shape[0]
+
+    fig, ax = plt.subplots(figsize=(8,8))
+
+    #Paint the grid
+    for i in range(grid_size):
+        for j in range(grid_size):
+            cell = grid[i, j]
+            rect = plt.Rectangle((j, i), 1, 1, facecolor='white', edgecolor='black')
+            ax.add_patch(rect)
+
+            if cell == 'N':
+                rect.set_facecolor("#72B842")
+            elif cell == 'M':
+                rect.set_facecolor("#5EAAF6")
+            elif cell == 'P':
+                rect.set_facecolor('#397716')
+            else:
+                rect.set_facecolor('#000000')
+
+            #Get the optimal policy
+            state = i * grid_size + j
+            best_action = np.argmax(Q[state])
+            arrow = action_arrows[best_action]
+
+            #Paint arrows
+            ax.text(j + 0.5, i + 0.5, arrow, ha='center', va='center', fontsize=18, color='red')
+
+    # Ajustes del gráfico
+    ax.set_xlim(0, grid_size)
+    ax.set_ylim(0, grid_size)
+    ax.set_aspect('equal')
+    ax.invert_yaxis()
+    plt.title("Optimal policy" + str(grid_idx), fontsize=16)
+
+    #Save and close
+    plt.savefig(plot_name + ".png", bbox_inches='tight')
+    print(f"Policy saved as {plot_name}.png")
+    plt.close(fig)
+
+
 
 class FrozenLake8x8Env(gym.Env):
     metadata = {'render_modes': ['pygame'], 'render_fps': 5}
@@ -312,6 +368,8 @@ for grid_idx in range(len(env.grid_list)):
     
     if not done:
         print(f"Tiempo agotado después de {steps} pasos")
+    
+    plot_policy(env, Q, "plot"+ str(grid_idx), grid_idx)
 
 # Resumen final
 print("\n" + "="*50)
@@ -321,3 +379,5 @@ for result in grid_results:
     print(f"Grid {result['grid_idx']+1}: Recompensa promedio = {result['final_avg_reward']:.2f}")
 
 env.close()
+
+
