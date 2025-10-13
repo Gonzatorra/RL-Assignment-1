@@ -8,24 +8,19 @@ import time
 class FrozenLake8x8Env(gym.Env):
     metadata = {'render_modes': ['pygame'], 'render_fps': 5}
     
-    def __init__(self):
+    def __init__(self, grid_list=None):
         super().__init__()
         self.grid_size = 8
         self.cell_size = 100
         
-        # Grid original: S=Start, N=Nothing, M=Meteorite, G=Goal, P=Palm
-        self.original_grid = np.array([
-            ['S','N','N','M','N','N','P','N'],
-            ['N','M','N','N','M','N','N','N'],
-            ['N','N','M','N','N','M','N','P'],
-            ['M','N','N','M','N','N','M','N'],
-            ['N','M','N','P','M','N','N','N'],
-            ['N','N','M','N','N','M','N','N'],
-            ['N','M','N','N','M','N','N','N'],
-            ['N','N','M','N','N','P','M','G']
-        ])
-        
-        # Grid que se modifica durante el episodio
+        # Si no se proporciona lista de grids, usar el original más algunos adicionales
+        if grid_list is None:
+            self.grid_list = self._create_additional_grids()
+        else:
+            self.grid_list = grid_list
+            
+        self.current_grid_idx = 0
+        self.original_grid = self.grid_list[self.current_grid_idx].copy()
         self.grid = self.original_grid.copy()
         
         self.action_space = spaces.Discrete(4)
@@ -44,12 +39,97 @@ class FrozenLake8x8Env(gym.Env):
             'P': pygame.transform.scale(pygame.image.load("imagenes/palmera.png"), (self.cell_size, self.cell_size))
         }
         self.agent_img = pygame.transform.scale(pygame.image.load("imagenes/dino.png"), (self.cell_size, self.cell_size))
+    
+    def _create_additional_grids(self):
+        """Crear grids adicionales manteniendo el original como primero"""
+        grids = []
         
+        # Grid original (el mismo que tenías)
+        grids.append(np.array([
+            ['S','N','N','M','N','N','P','N'],
+            ['N','M','N','N','M','N','N','N'],
+            ['N','N','M','N','N','M','N','P'],
+            ['M','N','N','M','N','N','M','N'],
+            ['N','M','N','P','M','N','N','N'],
+            ['N','N','M','N','N','M','N','N'],
+            ['N','M','N','N','M','N','N','N'],
+            ['N','N','M','N','N','P','M','G']
+        ]))
+        
+        # Grid 2 - Variación con menos meteoritos
+        grids.append(np.array([
+            ['S','N','N','N','N','N','P','N'],
+            ['N','N','N','N','M','N','N','N'],
+            ['N','N','M','N','N','N','N','P'],
+            ['M','N','N','N','N','N','M','N'],
+            ['N','M','N','P','N','N','N','N'],
+            ['N','N','N','N','N','M','N','N'],
+            ['N','M','N','N','N','N','N','N'],
+            ['N','N','M','N','N','P','N','G']
+        ]))
+        
+        # Grid 3 - Variación con más palmeras
+        grids.append(np.array([
+            ['S','N','P','M','N','N','P','N'],
+            ['N','M','N','N','M','N','N','N'],
+            ['P','N','M','N','P','M','N','P'],
+            ['M','N','N','M','N','N','M','N'],
+            ['N','M','N','P','M','N','N','N'],
+            ['N','P','M','N','N','M','N','N'],
+            ['N','M','N','N','M','N','P','N'],
+            ['N','N','M','N','N','P','M','G']
+        ]))
+        
+        # Grid 4 - Variación con camino más directo
+        grids.append(np.array([
+            ['S','N','N','N','N','N','P','N'],
+            ['N','N','N','N','M','N','N','N'],
+            ['N','N','M','N','N','N','N','P'],
+            ['N','N','N','N','N','N','M','N'],
+            ['N','M','N','P','N','N','N','N'],
+            ['N','N','N','N','N','M','N','N'],
+            ['N','M','N','N','N','N','N','N'],
+            ['N','N','N','N','N','P','M','G']
+        ]))
+        # Grid 4 - Variación con camino más directo
+        grids.append(np.array([
+            ['S','N','N','N','N','N','P','N'],
+            ['P','N','N','N','M','N','N','N'],
+            ['P','P','M','N','N','N','N','P'],
+            ['N','P','N','N','N','N','M','N'],
+            ['N','P','P','P','P','P','N','N'],
+            ['N','N','N','N','N','P','N','N'],
+            ['N','M','N','N','N','P','N','N'],
+            ['N','N','N','N','N','P','P','G']
+        ]))
+        
+        return grids
+        
+    def set_grid(self, grid_idx):
+        """Establecer un grid específico"""
+        self.current_grid_idx = grid_idx
+        self.original_grid = self.grid_list[self.current_grid_idx].copy()
+        self.grid = self.original_grid.copy()
+        
+        # Encontrar la posición inicial (S) en el grid actual
+        start_positions = np.where(self.grid == 'S')
+        if len(start_positions[0]) > 0:
+            self.agent_pos = (start_positions[0][0], start_positions[1][0])
+        else:
+            self.agent_pos = (0, 0)  # Fallback si no hay S
+    
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self.agent_pos = (0,0)
-        # Restaurar el grid original para cada episodio
+        # Restaurar el grid actual (no cambiar de grid)
         self.grid = self.original_grid.copy()
+        
+        # Encontrar la posición inicial (S) en el grid actual
+        start_positions = np.where(self.grid == 'S')
+        if len(start_positions[0]) > 0:
+            self.agent_pos = (start_positions[0][0], start_positions[1][0])
+        else:
+            self.agent_pos = (0, 0)  # Fallback si no hay S
+        
         return self._get_state(), {}
     
     def _get_state(self):
@@ -69,12 +149,12 @@ class FrozenLake8x8Env(gym.Env):
         if cell == 'M': 
             reward, done = -100, True
         elif cell == 'G': 
-            reward, done = 20, True
+            reward, done = 100, True
         elif cell == 'P': 
-            reward = 10  # bonificación por palmera
+            reward = 20  # bonificación por palmera
             self.grid[i,j] = 'N'  # la palmera se come y desaparece
         else:  # celda N o S
-            reward = -0.5  # castigo pequeño por moverse
+            reward = -1  # castigo pequeño por moverse
 
         return self._get_state(), reward, done, False, {}
     
@@ -85,7 +165,7 @@ class FrozenLake8x8Env(gym.Env):
         if self.screen is None:
             pygame.init()
             self.screen = pygame.display.set_mode((self.grid_size*self.cell_size, self.grid_size*self.cell_size))
-            pygame.display.set_caption("FrozenLake 8x8")
+            pygame.display.set_caption(f"FrozenLake 8x8 - Grid {self.current_grid_idx+1}")
             self.clock = pygame.time.Clock()
         
         # Dibujar grid
@@ -125,69 +205,119 @@ class FrozenLake8x8Env(gym.Env):
 
 
 # ---------------------
-# Entrenamiento con Q-learning
+# Entrenamiento SECUENCIAL con reinicio de Q-table
 # ---------------------
 env = FrozenLake8x8Env()
 
 # Parámetros Q-learning
-alpha = 0.1
-gamma = 0.99
+alpha = 0.2
+gamma = 0.95
 epsilon = 1.0
-epsilon_min = 0.01  # Reducir el mínimo para más exploración
-epsilon_decay = 0.999  # Decay más lento
-episodes = 10000  # Más episodios
+epsilon_min = 0.05
+epsilon_decay = 0.998
+episodes_per_grid = 6000  # Episodios por grid
 
-# Inicializar tabla Q
-Q = np.zeros((env.observation_space.n, env.action_space.n))
-rewards = []
+# Almacenar resultados por grid
+grid_results = []
 
-for ep in range(episodes):
-    state, _ = env.reset()
+print(f"Entrenando secuencialmente en {len(env.grid_list)} grids diferentes...")
+
+# Para cada grid, entrenar desde cero
+for grid_idx in range(len(env.grid_list)):
+    print(f"\n=== COMENZANDO ENTRENAMIENTO EN GRID {grid_idx+1} ===")
+    
+    # Establecer el grid actual
+    env.set_grid(grid_idx)
+    
+    # REINICIAR la tabla Q para este grid (empezar desde cero)
+    Q = np.random.uniform(-0.1, 0.1, (env.observation_space.n, env.action_space.n))
+    
+    # Reiniciar parámetros de exploración
+    epsilon = 1.0
+    rewards = []
+    success_count = 0
+    
+    # Entrenar en este grid específico
+    for ep in range(episodes_per_grid):
+        state, _ = env.reset()
+        done = False
+        total_reward = 0
+        steps = 0
+        
+        while not done and steps < 100:
+            # Epsilon-greedy
+            if random.uniform(0,1) < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(Q[state])
+            
+            next_state, reward, done, _, _ = env.step(action)
+            
+            # Actualizar Q
+            best_next_action = np.argmax(Q[next_state])
+            td_target = reward + gamma * Q[next_state, best_next_action]
+            td_error = td_target - Q[state, action]
+            Q[state, action] += alpha * td_error
+            
+            state = next_state
+            total_reward += reward
+            steps += 1
+            
+            # Contar éxitos
+            if done and reward > 0:
+                success_count += 1
+        
+        # Decaimiento de epsilon
+        epsilon = max(epsilon_min, epsilon * epsilon_decay)
+        rewards.append(total_reward)
+        
+        # Mostrar progreso cada 500 episodios
+        if ep % 500 == 0:
+            avg_reward = np.mean(rewards[-100:]) if len(rewards) >= 100 else np.mean(rewards)
+            success_rate = success_count / 500 if ep > 0 else 0
+            print(f"Grid {grid_idx+1}, Episodio {ep}: Recompensa promedio = {avg_reward:.2f}, Éxitos = {success_count}, Epsilon = {epsilon:.3f}")
+            success_count = 0
+    
+    # Guardar resultados de este grid
+    final_avg = np.mean(rewards[-100:]) if len(rewards) >= 100 else np.mean(rewards)
+    grid_results.append({
+        'grid_idx': grid_idx,
+        'final_avg_reward': final_avg,
+        'Q_table': Q.copy()  # Guardar la Q-table aprendida para este grid
+    })
+    
+    print(f"\n--- ENTRENAMIENTO COMPLETADO PARA GRID {grid_idx+1} ---")
+    print(f"Recompensa promedio últimos 100 episodios: {final_avg:.2f}")
+    
+    # Demostrar el agente en este grid inmediatamente después del entrenamiento
+    print(f"\nDemostración en Grid {grid_idx+1}:")
+    env.set_grid(grid_idx)  # Asegurarse de que estamos en el grid correcto
+    obs = env._get_state()
     done = False
-    total_reward = 0
     steps = 0
     
-    while not done and steps < 100:  # Límite de pasos por episodio
-        # Epsilon-greedy
-        if random.uniform(0,1) < epsilon:
-            action = env.action_space.sample()
-        else:
-            action = np.argmax(Q[state])
-        
-        next_state, reward, done, _, _ = env.step(action)
-        
-        # Actualizar Q con mejor fórmula
-        best_next_action = np.argmax(Q[next_state])
-        td_target = reward + gamma * Q[next_state, best_next_action]
-        td_error = td_target - Q[state, action]
-        Q[state, action] += alpha * td_error
-        
-        state = next_state
-        total_reward += reward
+    while not done and steps < 50:
+        action = np.argmax(Q[obs])  # política greedy
+        obs, reward, done, _, _ = env.step(action)
+        env.render()
+        time.sleep(0.3)
         steps += 1
+        
+        if done:
+            if reward > 0:
+                print(f"¡Éxito! Recompensa: {reward}")
+            else:
+                print(f"Fracaso. Recompensa: {reward}")
+            break
+    
+    if not done:
+        print(f"Tiempo agotado después de {steps} pasos")
 
-    # Exploración adicional ocasional
-    if ep % 100 == 0:
-        epsilon = max(epsilon_min, epsilon * 0.9)
-    
-    if epsilon > epsilon_min:
-        epsilon *= epsilon_decay
-    
-    rewards.append(total_reward)
-    
-    
-print("Entrenamiento terminado.")
-print("Promedio de recompensas últimos 100 episodios:", np.mean(rewards[-100:]))
-
-# ------------------------------
-# Mostrar el agente jugando
-# ------------------------------
-obs, _ = env.reset()
-done = False
-while not done:
-    action = np.argmax(Q[obs])  # política greedy
-    obs, reward, done, _, _ = env.step(action)
-    env.render()
-    time.sleep(0.3)  # animación lenta para verlo
+# Resumen final
+print("\n" + "="*50)
+print("RESUMEN FINAL DEL ENTRENAMIENTO")
+print("="*50)
+for result in grid_results:
+    print(f"Grid {result['grid_idx']+1}: Recompensa promedio = {result['final_avg_reward']:.2f}")
 
 env.close()
