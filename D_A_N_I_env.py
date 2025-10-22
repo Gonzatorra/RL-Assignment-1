@@ -43,19 +43,19 @@ class DaniEnv(gym.Env):
         """Crear grids adicionales manteniendo el original como primero"""
         grids = []
         
-        # Grid original (el mismo que tenías)
+        #Grid 1 (Muy fácil) - Camino directo con muchas palmeras
         grids.append(np.array([
-            ['S','N','N','M','N','N','P','N'],
-            ['N','M','N','N','M','N','N','N'],
-            ['N','N','M','N','N','M','N','P'],
-            ['M','N','N','M','N','N','M','N'],
-            ['N','M','N','P','M','N','N','N'],
-            ['N','N','M','N','N','M','N','N'],
-            ['N','M','N','N','M','N','N','N'],
-            ['N','N','M','N','N','P','M','G']
+            ['S','N','N','N','N','N','P','N'],
+            ['P','N','N','N','M','N','N','N'],
+            ['P','P','M','N','N','N','N','P'],
+            ['N','P','N','N','N','N','M','N'],
+            ['N','P','P','P','P','P','N','N'],
+            ['N','N','N','N','N','P','N','N'],
+            ['N','M','N','N','N','P','N','N'],
+            ['N','N','N','N','N','P','P','G']
         ]))
-        
-        # Grid 2 - Variación con menos meteoritos
+
+        #Grid 2 (Fácil) - Camino sin muchos meteoritos y pocas palmeras
         grids.append(np.array([
             ['S','N','N','N','N','N','P','N'],
             ['N','N','N','N','M','N','N','N'],
@@ -67,7 +67,33 @@ class DaniEnv(gym.Env):
             ['N','N','M','N','N','P','N','G']
         ]))
         
-        # Grid 3 - Variación con más palmeras
+        
+        #Grid 3 (Fácil) - Camino sin muchos meteoritos y pocas palmeras
+        grids.append(np.array([
+            ['S','N','N','N','N','N','P','N'],
+            ['N','N','N','N','M','N','N','N'],
+            ['N','N','M','N','N','N','N','P'],
+            ['N','N','N','N','N','N','M','N'],
+            ['N','M','N','P','N','N','N','N'],
+            ['N','N','N','N','N','M','N','N'],
+            ['N','M','N','N','N','N','N','N'],
+            ['N','N','N','N','N','P','M','G']
+        ]))
+
+
+        #Grid 4 (Difícil) - Muchos meteoritos
+        grids.append(np.array([
+            ['S','N','N','M','N','N','P','N'],
+            ['N','M','N','N','M','N','N','N'],
+            ['N','N','M','N','N','M','N','P'],
+            ['M','N','N','M','N','N','M','N'],
+            ['N','M','N','P','M','N','N','N'],
+            ['N','N','M','N','N','M','N','N'],
+            ['N','M','N','N','M','N','N','N'],
+            ['N','N','M','N','N','P','M','G']
+        ]))
+
+        #Grid 5 (Difícil) - Muchos meteoritos y palmeras
         grids.append(np.array([
             ['S','N','P','M','N','N','P','N'],
             ['N','M','N','N','M','N','N','N'],
@@ -79,28 +105,7 @@ class DaniEnv(gym.Env):
             ['N','N','M','N','N','P','M','G']
         ]))
         
-        # Grid 4 - Variación con camino más directo
-        grids.append(np.array([
-            ['S','N','N','N','N','N','P','N'],
-            ['N','N','N','N','M','N','N','N'],
-            ['N','N','M','N','N','N','N','P'],
-            ['N','N','N','N','N','N','M','N'],
-            ['N','M','N','P','N','N','N','N'],
-            ['N','N','N','N','N','M','N','N'],
-            ['N','M','N','N','N','N','N','N'],
-            ['N','N','N','N','N','P','M','G']
-        ]))
-        # Grid 4 - Variación con camino más directo
-        grids.append(np.array([
-            ['S','N','N','N','N','N','P','N'],
-            ['P','N','N','N','M','N','N','N'],
-            ['P','P','M','N','N','N','N','P'],
-            ['N','P','N','N','N','N','M','N'],
-            ['N','P','P','P','P','P','N','N'],
-            ['N','N','N','N','N','P','N','N'],
-            ['N','M','N','N','N','P','N','N'],
-            ['N','N','N','N','N','P','P','G']
-        ]))
+        
         
         return grids
         

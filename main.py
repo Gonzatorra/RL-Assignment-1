@@ -161,7 +161,7 @@ def train_all_algorithms(env, grid_idx, episodes, alpha, gamma, epsilon):
         ('Monte Carlo', montecarlo),
         ('SARSA', SARSA)
     ]:
-        print(f"\Training {algo_name} in Grid {grid_idx+1}...")
+        print(f"\n Training {algo_name} in Grid {grid_idx+1}...")
         Q, rewards = algo_func(env, alpha, gamma, epsilon, episodes)
         results[algo_name] = {'Q': Q, 'rewards': rewards}
 
