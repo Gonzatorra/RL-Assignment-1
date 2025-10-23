@@ -1,9 +1,31 @@
 import numpy as np
 import random
 
-#Q-LEARNING
+#-----------------------------------------------#
+#-------------------Q-LEARNING------------------#
+#-----------------------------------------------#
 def q_learning(env, alpha, gamma, epsilon, episodes, epsilon_decay=None, epsilon_min=None, seed=None, max_steps_episode=None):
-    
+    """
+    Q-Learning algorithm with epsilon-greedy policy.
+
+    Args:
+        env (DaniEnv): Environment object
+        alpha (float): Learning rate
+        gamma (float): Discount factor
+        epsilon (float): Initial exploration rate for epsilon-greedy
+        episodes (int): Number of episodes to run
+        epsilon_decay (float, optional): Factor to decay epsilon per episode
+        epsilon_min (float, optional): Minimum allowed epsilon
+        seed (int, optional): Random seed for reproducibility
+        max_steps_episode (int, optional): Max steps allowed per episode
+
+    Returns:
+        Q_q (np.array): Learned Q-table
+        q_rewards (list[float]): Total rewards per episode
+        info (dict): Extra info (episode lengths)
+    """
+
+    #Set a seed if it is defined
     if seed is not None:
         np.random.seed(seed)
         random.seed(seed)
@@ -40,26 +62,49 @@ def q_learning(env, alpha, gamma, epsilon, episodes, epsilon_decay=None, epsilon
         q_rewards.append(total_reward)
         episode_lengths.append(steps)
 
-        # Aplicar decay de epsilon si está definido
+        #Apply epsilon decay if it is defined
         if epsilon_decay is not None:
             epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
+    #Extra info with episodes lengths
     info = {"lengths": episode_lengths}
-    return Q_q, q_rewards, info  #info con longitudes
+    return Q_q, q_rewards, info  
 
 
-#MONTECARLO
+
+
+
+#-----------------------------------------------#
+#-------------------MONTECARLO------------------#
+#-----------------------------------------------#
 def montecarlo(env, alpha, gamma, epsilon, episodes, epsilon_decay=None, epsilon_min=None, seed=None, max_steps_episode = None):  
     """
     Every-Visit Monte Carlo control with epsilon-greedy policy.
-    Compatible with run_experiment().
+
+    Args:
+        env (DaniEnv): Environment object
+        alpha (float): Learning rate (not used for standard MC, included for compatibility)
+        gamma (float): Discount factor
+        epsilon (float): Initial exploration rate for epsilon-greedy
+        episodes (int): Number of episodes to run
+        epsilon_decay (float, optional): Factor to decay epsilon per episode
+        epsilon_min (float, optional): Minimum allowed epsilon
+        seed (int, optional): Random seed for reproducibility
+        max_steps_episode (int, optional): Max steps allowed per episode
+
+    Returns:
+        Q_mc (np.array): Learned Q-table
+        mc_rewards (list[float]): Total rewards per episode
+        info (dict): Extra info (episode lengths)
     """
 
-    #Set a seed
+    #Set a seed if it is defined
     if seed is not None:
         np.random.seed(seed)
         random.seed(seed)
         env.reset(seed=seed)
+
+
 
     Q_mc = np.zeros((env.observation_space.n, env.action_space.n))
     returns = {}
@@ -101,18 +146,44 @@ def montecarlo(env, alpha, gamma, epsilon, episodes, epsilon_decay=None, epsilon
         mc_rewards.append(total_reward)
         episode_lengths.append(steps)
 
-        # Decaimiento del epsilon
+        #Apply epsilon decay if it is defined
         if epsilon_decay is not None and epsilon_min is not None:
             epsilon = max(epsilon_min, epsilon * epsilon_decay)
-
+    
+    #Extra info with episodes lengths
     info = {"lengths": episode_lengths}
     return Q_mc, mc_rewards, info
     
 
 
-#SARSA
+
+
+
+#-----------------------------------------------#
+#---------------------SARSA---------------------#
+#-----------------------------------------------#
 def SARSA(env, alpha, gamma, epsilon, episodes, epsilon_decay=None, epsilon_min=None, seed=None, max_steps_episode = None):
-    #Set a seed
+    """
+    SARSA algorithm (on-policy Temporal Difference control) with epsilon-greedy policy.
+
+    Args:
+        env (DaniEnv): Environment object
+        alpha (float): Learning rate
+        gamma (float): Discount factor
+        epsilon (float): Initial exploration rate for epsilon-greedy
+        episodes (int): Number of episodes to run
+        epsilon_decay (float, optional): Factor to decay epsilon per episode
+        epsilon_min (float, optional): Minimum allowed epsilon
+        seed (int, optional): Random seed for reproducibility
+        max_steps_episode (int, optional): Max steps allowed per episode
+
+    Returns:
+        Q_sarsa (np.array): Learned Q-table
+        sarsa_rewards (list[float]): Total rewards per episode
+        info (dict): Extra info (episode lengths)
+    """
+    
+    #Set a seed if it is defined
     if seed is not None:
         np.random.seed(seed)
         random.seed(seed)
@@ -129,24 +200,25 @@ def SARSA(env, alpha, gamma, epsilon, episodes, epsilon_decay=None, epsilon_min=
         total_reward = 0
         steps = 0
         
-        # Acción inicial (epsilon-greedy)
+        #Acción inicial (epsilon-greedy)
         if random.random() < epsilon:
             action = env.action_space.sample()
         else:
             action = np.argmax(Q_sarsa[state])
         
+
         while not done and steps < max_steps_episode:
             next_state, reward, done, _, _ = env.step(action)
             total_reward += reward
             steps +=1
             
-            # Siguiente acción (epsilon-greedy)
+            #Epsilon-greedy policy
             if random.random() < epsilon:
-                next_action = env.action_space.sample()
+                next_action = env.action_space.sample() #Exploration; with probability epsilon takes a random action.
             else:
-                next_action = np.argmax(Q_sarsa[next_state])
+                next_action = np.argmax(Q_sarsa[next_state]) #Explotation; with probability 1-epsilon takes de best action Q_mc.
             
-            # Actualizar Q
+            #Update Q
             Q_sarsa[state, action] += alpha * (reward + gamma * Q_sarsa[next_state, next_action] - Q_sarsa[state, action])
             
             state, action = next_state, next_action
@@ -155,10 +227,13 @@ def SARSA(env, alpha, gamma, epsilon, episodes, epsilon_decay=None, epsilon_min=
         sarsa_rewards.append(total_reward)
         episode_lengths.append(steps)
 
-        # Decaimiento del epsilon
+
+        #Apply epsilon decay if it is defined
         if epsilon_decay is not None and epsilon_min is not None:
             epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
+        
+    #Extra info with episodes lengths
     info = {"lengths": episode_lengths}
 
     return Q_sarsa, sarsa_rewards, info
