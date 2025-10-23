@@ -329,7 +329,7 @@ def plot_algorithm(algorithm_name, grid_idx, variant, mean_rewards, std_rewards)
 
 #----------EXECUTE EXPERIMENT----------#
 def run_experiment(env, algorithm, episodes, alpha, gamma, epsilon,
-                   epsilon_decay=None, epsilon_min=None, seeds=None,
+                   epsilon_decay=None, epsilon_min=None, seed=None,
                    max_steps_episode=None):
     """
     Executes a given algorithm with the selected hyperparameters in all grids. It also saves calculated statistics in TXT file.
@@ -343,13 +343,10 @@ def run_experiment(env, algorithm, episodes, alpha, gamma, epsilon,
         epsilon (float): Initial exploration rate for epsilon-greedy policy
         epsilon_decay (float, optional): Factor for epsilon decay. Default is None.
         epsilon_min (float, optional): Minimum allowed epsilon. Default is None.
-        seeds (list[int], optional): List of seeds for reproducibility. Default is None.
+        seed (int, optional): Seed for reproducibility. Default is None.
         max_steps_episode (int, optional): Maximum steps allowed per episode. Default is None.
 
     """
-
-    if seeds is None:
-        seeds = [0, 1, 2, 3, 4]
 
     variants = {
         "no_decay": {"epsilon_decay": None, "epsilon_min": None},
@@ -362,32 +359,26 @@ def run_experiment(env, algorithm, episodes, alpha, gamma, epsilon,
 
         for variant, params in variants.items():
             print(f"Running variant: {variant}")
-            rewards_all = []
-            lengths_all = []
-            Q_all = []
             start_time = time.time()
+            
+            Q, rewards, info = algorithm(
+                env=env,
+                alpha=alpha,
+                gamma=gamma,
+                epsilon=epsilon,
+                episodes=episodes,
+                epsilon_decay=params["epsilon_decay"],
+                epsilon_min=params["epsilon_min"],
+                seed=seed,
+                max_steps_episode=max_steps_episode
+            )
 
-            for seed in seeds:
-                Q, rewards, info = algorithm(
-                    env=env,
-                    alpha=alpha,
-                    gamma=gamma,
-                    epsilon=epsilon,
-                    episodes=episodes,
-                    epsilon_decay=params["epsilon_decay"],
-                    epsilon_min=params["epsilon_min"],
-                    seed=seed,
-                    max_steps_episode=max_steps_episode
-                )
-                rewards_all.append(rewards)
-                lengths_all.append(info["lengths"])
-                Q_all.append(Q)
+            rewards_all = np.array([rewards])
+            lengths_all = np.array([info["lengths"]])
+            Q_all = np.array([Q])
 
             elapsed = time.time() - start_time
-            rewards_all = np.array(rewards_all)
-            lengths_all = np.array(lengths_all)
-            Q_all = np.array(Q_all)
-
+            
             mean_rewards = np.mean(rewards_all, axis=0)
             std_rewards = np.std(rewards_all, axis=0)
             Q_avg = np.mean(Q_all, axis=0)

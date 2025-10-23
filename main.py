@@ -13,11 +13,12 @@ def main():
     episodes = 1000
     alpha = 0.2
     gamma = 0.95
-    epsilon, epsilon_decay, epsilon_min  = 1.0, 0.05, 0.998
-    seed = [100, 101]
+    epsilon = 1.0
+    epsilon_decay = 0.05
+    epsilon_min =  0.998
+    seed = 100
     algos = [q_learning, montecarlo, SARSA]
     max_steps_episode = 100
-    n_trials = 30            # número de pruebas de Optuna
 
 
     #-----------------------------------------------#
@@ -34,7 +35,7 @@ def main():
             epsilon=epsilon,
             epsilon_decay=epsilon_decay,
             epsilon_min=epsilon_min,
-            seeds=seed,
+            seed=seed,
             max_steps_episode=max_steps_episode
         )
     
