@@ -43,7 +43,7 @@ class DaniEnv(gym.Env):
         """Crear grids adicionales manteniendo el original como primero"""
         grids = []
         
-        #Grid 1 (Muy fácil) - Camino directo con muchas palmeras
+        #Grid 0 (Muy fácil) - Camino directo con muchas palmeras
         grids.append(np.array([
             ['S','N','N','N','N','N','P','N'],
             ['P','N','N','N','M','N','N','N'],
@@ -55,7 +55,7 @@ class DaniEnv(gym.Env):
             ['N','N','N','N','N','P','P','G']
         ]))
 
-        #Grid 2 (Fácil) - Camino sin muchos meteoritos y pocas palmeras
+        #Grid 1 (Fácil) - Camino sin muchos meteoritos y pocas palmeras
         grids.append(np.array([
             ['S','N','N','N','N','N','P','N'],
             ['N','N','N','N','M','N','N','N'],
@@ -68,7 +68,7 @@ class DaniEnv(gym.Env):
         ]))
         
         
-        #Grid 3 (Fácil) - Camino sin muchos meteoritos y pocas palmeras
+        #Grid 2 (Fácil) - Camino sin muchos meteoritos y pocas palmeras
         grids.append(np.array([
             ['S','N','N','N','N','N','P','N'],
             ['N','N','N','N','M','N','N','N'],
@@ -81,7 +81,7 @@ class DaniEnv(gym.Env):
         ]))
 
 
-        #Grid 4 (Difícil) - Muchos meteoritos
+        #Grid 3 (Difícil) - Muchos meteoritos
         grids.append(np.array([
             ['S','N','N','M','N','N','P','N'],
             ['N','M','N','N','M','N','N','N'],
@@ -93,7 +93,7 @@ class DaniEnv(gym.Env):
             ['N','N','M','N','N','P','M','G']
         ]))
 
-        #Grid 5 (Difícil) - Muchos meteoritos y palmeras
+        #Grid 4 (Difícil) - Muchos meteoritos y palmeras
         grids.append(np.array([
             ['S','N','P','M','N','N','P','N'],
             ['N','M','N','N','M','N','N','N'],

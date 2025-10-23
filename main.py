@@ -126,7 +126,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from D_A_N_I_env import DaniEnv
-from utils import plot_rewards_comparison, plot_policy
+from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize_with_optuna, save_best_params, load_best_params
 from algorithms import q_learning, montecarlo, SARSA
 
 
@@ -171,35 +171,96 @@ def train_all_algorithms(env, grid_idx, episodes, alpha, gamma, epsilon):
 
     return results
 
+import matplotlib
+matplotlib.use('Agg')
 
 def main():
     env = DaniEnv()
-    alpha, gamma = 0.2, 0.95
-    epsilon, epsilon_min, epsilon_decay = 1.0, 0.05, 0.998
-    episodes_per_grid = 1000
+    episodes = 1000
+    alpha = 0.2
+    gamma = 0.95
+    epsilon, epsilon_decay, epsilon_min  = 1.0, 0.05, 0.998
+    seed = [100, 101]
+    algos = [q_learning, montecarlo, SARSA]
+    max_steps_episode = 100
+    n_trials = 30            # número de pruebas de Optuna
 
-    grid_results = []
 
+    #Experimentos exhaustivos -  ALGORITMOS INDIVIDUALES
+    all_results = {}
+    for algo in algos:
+        print(f"\n=== Running exhaustive analysis for {algo.__name__} ===")
+        results = run_experiment(
+            env=env,
+            algorithm=algo,
+            episodes=episodes,
+            alpha=alpha,
+            gamma=gamma,
+            epsilon=epsilon,
+            epsilon_decay=epsilon_decay,
+            epsilon_min=epsilon_min,
+            seeds=seed,
+            max_steps_episode=max_steps_episode
+        )
+        all_results[algo.__name__] = results
+
+    # 1️⃣ Intentar cargar los mejores parámetros
+    best_params = load_best_params()
+
+    # 2️⃣ Si no existen, ejecutar Optuna y guardar
+    if best_params is None:
+        best_params = optimize_with_optuna(
+            env=env,
+            algos=algos,
+            episodes=1000,
+            seed=100,
+            n_trials=20,
+            max_steps_episode=200,
+            n_jobs=4  # usa 4 núcleos de CPU en paralelo
+        )
+        save_best_params(best_params)
+
+    # 3️⃣ Mostrar los mejores parámetros por algoritmo y grid
+    print("\n=== Mejores hiperparámetros por algoritmo y grid ===")
+    for algo_name, grids in best_params.items():
+        for grid_idx, params in grids.items():
+            print(f"{algo_name} - Grid {grid_idx}: {params}")
+
+    # 2️⃣ Ejecutar cada algoritmo por grid usando los mejores parámetros
     for grid_idx in range(len(env.grid_list)):
-        print(f"\n=== GRID {grid_idx+1} ===")
+        print(f"\n=== Running algorithms on Grid {grid_idx} with best hyperparameters ===")
         env.set_grid(grid_idx)
 
-        results_algos = train_all_algorithms(env, grid_idx, episodes_per_grid, alpha, gamma, epsilon)
-        grid_results.append({'grid_idx': grid_idx, 'results': results_algos})
+        results_algos = {}
 
-        #Reward comparison plot (from utils.py)
-        plot_rewards_comparison(results_algos, grid_idx, window=1000)
+        for algo in algos:
+            params = best_params[algo.__name__][str(grid_idx)]
+            print(f"Running {algo.__name__} with params: {params}")
 
-    #Final summary
-    print("\n" + "="*50)
-    print("FINAL SUMMARY FOR EACH GRID DURING TRAINING")
-    print("="*50)
-    for result in grid_results:
-        idx = result['grid_idx']
-        print(f"\nGrid {idx+1}:")
-        for algo_name, data in result['results'].items():
-            avg_reward = np.mean(data['rewards'][-100:])
-            print(f"{algo_name}: Average reward for las 100 episodes = {avg_reward:.2f}")
+            Q, rewards, _ = algo(
+                env=env,
+                alpha=params['alpha'],
+                gamma=params['gamma'],
+                epsilon=params['epsilon'],
+                episodes=episodes,
+                epsilon_decay=params.get('epsilon_decay'),
+                epsilon_min=params.get('epsilon_min'),
+                seed=100,
+                max_steps_episode=max_steps_episode
+            )
+
+            results_algos[algo.__name__] = {'Q': Q, 'rewards': rewards}
+
+            # Plot policy para este algoritmo y grid
+            plot_policy(
+                grid=env.grid_list[grid_idx],
+                Q=Q,
+                plot_name=f"{algo.__name__}_grid{grid_idx}_policy",
+                grid_idx=grid_idx
+            )
+
+        # Comparación de recompensas entre algoritmos
+        plot_rewards_comparison(results_algos, grid_idx=grid_idx, window=50)
 
     env.close()
 
