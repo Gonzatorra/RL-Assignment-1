@@ -1,5 +1,5 @@
 from D_A_N_I_env import DaniEnv
-from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize_with_optuna, save_best_params, load_best_params, plot_algorithm, read_summary_file, load_rewards
+from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize_with_optuna, save_best_params, load_best_params, plot_algorithm, read_summary_file, load_rewards, analyze_reward_sensitivity, summarize_sensitivity_results
 from algorithms import q_learning, montecarlo, SARSA
 
 #import matplotlib
@@ -106,6 +106,7 @@ def main():
     for algo_name, grids in best_params.items():
         for grid_idx, params in grids.items():
             print(f"{algo_name} - Grid {grid_idx}: {params}")
+        print("")
 
     #Execute each algorithm and each grid with the selected best parameters
     for grid_idx in range(len(env.grid_list)):
@@ -142,9 +143,15 @@ def main():
 
         #Reward comparison between algorithms in each grid
         plot_rewards_comparison(results_algos, grid_idx=grid_idx, window=50)
-
+        
     env.close()
 
+
+    #Reward value tuning para los algoritmos sobre un grid específico
+    results_df = analyze_reward_sensitivity(algos)
+    summarize_sensitivity_results(results_df)
+
+    
 
 if __name__ == "__main__":
     main()

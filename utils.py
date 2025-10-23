@@ -5,6 +5,9 @@ import json
 import optuna
 import numpy as np
 import matplotlib.pyplot as plt
+from D_A_N_I_env import DaniEnv #import for analyze_reward_sensitivity
+import pandas as pd
+
 
 #-----------------------------------------------#
 #----------CREATE THE MAIN FOLDER---------------#
@@ -548,3 +551,235 @@ def load_best_params(filename="best_params.json"):
     else:
         print(f"No file found at {filename}")
         return None
+
+
+
+
+
+
+
+
+
+#-----------------------------------------------#
+#------Reward value tuning for algorithms-------#
+#-----------------------------------------------#
+
+def analyze_reward_sensitivity(algos):
+    """
+    Analyzes how reward configurations affect the performance of algorithms
+    """
+
+    #Load best parameters from Optuna
+    best_params = load_best_params()
+
+    #Reward configurations to test
+    reward_configs = [
+        #Base configuration
+        {
+            'name': 'Base',
+            'meteorite': -100,
+            'palm': 20, 
+            'goal': 100,
+            'step': -1
+        },
+        #More negative meteorite
+        {
+            'name': 'Strong_Meteorite',
+            'meteorite': -200,
+            'palm': 20,
+            'goal': 100,
+            'step': -1
+        },
+        #Less negative meteorite
+        {
+            'name': 'Weak_Meteorite',
+            'meteorite': -50,
+            'palm': 20,
+            'goal': 100,
+            'step': -1
+        },
+        #More positive palm tree
+        {
+            'name': 'Strong_Palm',
+            'meteorite': -100,
+            'palm': 50,
+            'goal': 100,
+            'step': -1
+        },
+        #Less positive palm tree
+        {
+            'name': 'Weak_Palm',
+            'meteorite': -100,
+            'palm': 10,
+            'goal': 100,
+            'step': -1
+        },
+        #More positive goal
+        {
+            'name': 'Strong_Goal',
+            'meteorite': -100,
+            'palm': 20,
+            'goal': 200,
+            'step': -1
+        },
+        #Less positive goal
+        {
+            'name': 'Weak_Goal',
+            'meteorite': -100,
+            'palm': 20,
+            'goal': 50,
+            'step': -1
+        },
+        #More negative step
+        {
+            'name': 'Costly_Step',
+            'meteorite': -100,
+            'palm': 20,
+            'goal': 100,
+            'step': -5
+        },
+        #Less negative step
+        {
+            'name': 'Cheap_Step',
+            'meteorite': -100,
+            'palm': 20,
+            'goal': 100,
+            'step': -0.5
+        }
+    ]
+    
+    
+    #Metrics
+    results = []
+
+    #Fixed grid for analysis
+    grid_idx = 1
+    episodes = 500
+    max_steps = 200
+
+    print("\n=== Reward Sensitivity Analysis ===")
+
+    for config in reward_configs:
+        print(f"Testing configuration: {config['name']}")
+
+        #Modify the environment with the new rewards
+        env = DaniEnv()
+        env.set_grid(grid_idx)
+
+        #Override step method to use our rewards
+        def custom_step(action):
+            i, j = env.agent_pos
+            if action == 0 and i > 0: i -= 1
+            if action == 1 and j < env.grid_size - 1: j += 1
+            if action == 2 and i < env.grid_size - 1: i += 1
+            if action == 3 and j > 0: j -= 1
+            env.agent_pos = (i, j)
+            
+            cell = env.grid[i, j]
+            reward, done = 0, False
+            
+            if cell == 'M':  
+                reward, done = config['meteorite'], True
+            elif cell == 'G':  
+                reward, done = config['goal'], True
+            elif cell == 'P':  
+                reward = config['palm']
+                env.grid[i, j] = 'N'
+            else:  
+                reward = config['step']
+                
+            return env._get_state(), reward, done, False, {}
+        
+        env.step = custom_step
+
+        #Test each algorithm - CORREGIDO
+        for algo in algos:
+            algo_name = algo.__name__
+            print(f"  - Running {algo_name}...")
+
+            #Get best parameters for this algorithm and grid
+            params = best_params[algo_name][str(grid_idx)]
+
+            #Run algorithm
+            Q, rewards, info = algo(
+                env=env,
+                alpha=params['alpha'],
+                gamma=params['gamma'],
+                epsilon=params['epsilon'],
+                episodes=episodes,
+                epsilon_decay=params.get('epsilon_decay'),
+                epsilon_min=params.get('epsilon_min'),
+                seed=100,
+                max_steps_episode=max_steps
+            )
+
+            #Calculate metrics - CORREGIDO
+            mean_reward = np.mean(rewards)
+            std_reward = np.std(rewards)
+            success_rate = np.mean([1 if r > 0 else 0 for r in rewards])
+            mean_steps = np.mean(info["lengths"])  # Usar info["lengths"] en lugar de steps_per_episode
+
+            #Save results - CORREGIDO (usar algo_name en lugar de algo_name no definido)
+            results.append({
+                'config': config['name'],
+                'algorithm': algo_name,  # CORREGIDO: estaba usando variable no definida
+                'mean_reward': mean_reward,
+                'std_reward': std_reward,
+                'success_rate': success_rate,
+                'mean_steps': mean_steps,
+                'meteorite_reward': config['meteorite'],
+                'palm_reward': config['palm'],
+                'goal_reward': config['goal'],
+                'step_reward': config['step']
+            })
+        print("")
+        
+        env.close()
+    
+    return pd.DataFrame(results)
+
+
+
+def summarize_sensitivity_results(results_df):
+    """
+    Resumen estadístico de los resultados del análisis de sensibilidad
+    """
+    if results_df is None or results_df.empty:
+        print("No hay resultados para resumir")
+        return
+    
+    print("\n" + "="*80)
+    print("RESUMEN DE RESULTADOS - ANÁLISIS DE SENSIBILIDAD")
+    print("="*80)
+    
+    # Mejores configuraciones por algoritmo
+    print("\nMEJORES CONFIGURACIONES POR ALGORITMO:")
+    print("-" * 50)
+    
+    for algo in results_df['algorithm'].unique():
+        algo_data = results_df[results_df['algorithm'] == algo]
+        best_config = algo_data.loc[algo_data['mean_reward'].idxmax()]
+        
+        print(f"\n{algo.upper():<12}")
+        print(f"  Mejor configuración: {best_config['config']}")
+        print(f"  Recompensa promedio: {best_config['mean_reward']:.2f} ± {best_config['std_reward']:.2f}")
+        print(f"  Tasa de éxito: {best_config['success_rate']:.1%}")
+        print(f"  Pasos promedio: {best_config['mean_steps']:.1f}")
+    
+    # Configuración general más efectiva
+    overall_best = results_df.loc[results_df['mean_reward'].idxmax()]
+    print(f"\n{'CONFIGURACIÓN MÁS EFECTIVA GENERAL':<40}")
+    print(f"  Configuración: {overall_best['config']}")
+    print(f"  Algoritmo: {overall_best['algorithm']}")
+    print(f"  Recompensa: {overall_best['mean_reward']:.2f}")
+    
+    # Análisis de correlación
+    print(f"\n{'CORRELACIÓN RECOMPENSAS vs RENDIMIENTO':<40}")
+    print("-" * 50)
+    
+    for reward_type in ['meteorite_reward', 'palm_reward', 'goal_reward', 'step_reward']:
+        correlation = results_df[reward_type].corr(results_df['mean_reward'])
+        significance = "***" if abs(correlation) > 0.5 else "**" if abs(correlation) > 0.3 else "*" if abs(correlation) > 0.1 else ""
+        
+        reward_name = reward_type.replace('_reward', '').title()
+        print(f"  {reward_name:<12}: r = {correlation:7.3f} {significance}")
