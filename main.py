@@ -126,7 +126,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from D_A_N_I_env import DaniEnv
-from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize_with_optuna, save_best_params, load_best_params
+from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize_with_optuna, save_best_params, load_best_params, plot_algorithm
 from algorithms import q_learning, montecarlo, SARSA
 
 
@@ -203,6 +203,22 @@ def main():
             max_steps_episode=max_steps_episode
         )
         all_results[algo.__name__] = results
+
+    # 📈 2️⃣ Generar curvas de aprendizaje
+    for algo_name, grids in all_results.items():
+        for grid_idx, variants in grids.items():
+            for variant_name, metrics in variants.items():
+                mean_rewards = metrics["mean_rewards"]
+                std_rewards = metrics["std_rewards"]
+                
+                plot_algorithm(
+                    algorithm_name=algo_name,
+                    grid_idx=grid_idx,
+                    variant=variant_name,
+                    mean_rewards=mean_rewards,
+                    std_rewards=std_rewards
+                )
+
 
     # 1️⃣ Intentar cargar los mejores parámetros
     best_params = load_best_params()

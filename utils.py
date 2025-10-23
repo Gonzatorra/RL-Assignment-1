@@ -17,6 +17,12 @@ def plot_policy(grid, Q, plot_name, grid_idx):
         grid_idx (int): Grid index for a better understanding
     """
 
+    # Carpeta base
+    base_folder = "plots/policy"
+    # Subcarpeta por grid
+    folder = os.path.join(base_folder, f"grid{grid_idx}")
+    os.makedirs(folder, exist_ok=True)  # crea toda la ruta si no existe
+
     #All possible actions to take
     action_arrows = {
         0: '↑',
@@ -60,8 +66,8 @@ def plot_policy(grid, Q, plot_name, grid_idx):
     ax.invert_yaxis()
     plt.title("Optimal policy Grid " + str(grid_idx), fontsize=16)
 
-    #Save the plot
-    plot_path = os.path.join(save_dir, plot_name + ".png")
+    # Guardar en la subcarpeta del grid
+    plot_path = os.path.join(folder, plot_name + ".png")
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
     print(f"Policy saved as {plot_path}")
@@ -103,12 +109,17 @@ def plot_rewards_comparison(algos_results, grid_idx, window):
         plt.plot(smooth(data['rewards'], window), label=algo_name)
     plt.xlabel("Episode")
     plt.ylabel(f"Total reward (last average {window})")
-    plt.title(f"Grid {grid_idx+1} - Comparison between algorithms")
+    plt.title(f"Grid {grid_idx} - Comparison between algorithms")
     plt.legend()
     plt.grid(True)
 
-    #Save the plot
-    plot_path = os.path.join(save_dir, f"rewards_comparison_grid{grid_idx}.png")
+    # Carpeta base y subcarpeta por grid
+    base_folder = "plots/rewards"
+    folder = os.path.join(base_folder, f"grid{grid_idx}")
+    os.makedirs(folder, exist_ok=True)
+
+    # Guardar el plot
+    plot_path = os.path.join(folder, f"rewards_comparison_grid{grid_idx}.png")
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Plot saved as {plot_path}")
@@ -190,38 +201,70 @@ def run_experiment(env, algorithm, episodes, alpha, gamma, epsilon, epsilon_deca
                 "Q": Q_avg
             }
 
-            # === plot learning curve ===
-            plt.figure(figsize=(8,4))
-            plt.plot(mean_rewards, label=f"{variant}")
-            plt.fill_between(
-                np.arange(len(mean_rewards)),
-                mean_rewards - std_rewards,
-                mean_rewards + std_rewards,
-                alpha=0.2
-            )
-
-            folder = f"plots/{algorithm.__name__}"
-            os.makedirs(folder, exist_ok=True)  # crea la carpeta si no existe
-
-            # Línea horizontal en y=0 para referencia
-            plt.axhline(y=0, color='red', linestyle='--', alpha=0.5, label='Zero Line')
-
-            plt.title(f"Algorithm {algorithm.__name__} - Grid {grid_idx} - {variant}")
-            plt.xlabel("Episode")
-            plt.ylabel("Average Reward")
-            plt.legend()
-            plt.tight_layout()
-            plt.savefig(f"plots/{algorithm.__name__}/{algorithm.__name__}_grid{grid_idx}_{variant}.png")
-            plt.close()
-
-
-            output_file = f"plots/{algorithm.__name__}/results_summary_{algorithm.__name__}.txt"
             
+            
+            output_file = f"plots/{algorithm.__name__}/results_summary_{algorithm.__name__}.txt"
+            os.makedirs(f"plots/{algorithm.__name__}", exist_ok=True)
             with open(output_file, "a") as f: 
                 f.write(f"Grid {grid_idx} - {variant}: "
                 f"mean_last100={mean_last100:.2f}, std={std_last100:.2f}, "
                 f"mean_length={mean_len:.1f}, time={elapsed:.1f}s\n\n")
     return results
+
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+
+import re
+
+def read_summary_file(algorithm_name):
+    path = f"plots/{algorithm_name}/results_summary_{algorithm_name}.txt"
+    data = []
+
+    with open(path, "r") as f:
+        for line in f:
+            match = re.match(
+                r"Grid (\d+) - (\w+): mean_last100=([\d\.]+), std=([\d\.]+), mean_length=([\d\.]+), time=([\d\.]+)s", 
+                line
+            )
+            if match:
+                grid_idx, variant, mean, std, length, time = match.groups()
+                data.append({
+                    "grid_idx": int(grid_idx),
+                    "variant": variant,
+                    "mean_last100": float(mean),
+                    "std": float(std),
+                    "mean_length": float(length),
+                    "time": float(time)
+                })
+    return data
+
+def plot_algorithm(algorithm_name, grid_idx, variant, mean_rewards, std_rewards):
+    """
+    Grafica la curva de aprendizaje de un algoritmo y variante para un grid específico.
+    """
+    plt.figure(figsize=(8,4))
+    plt.plot(mean_rewards, label=f"{variant}")
+    plt.fill_between(
+        np.arange(len(mean_rewards)),
+        mean_rewards - std_rewards,
+        mean_rewards + std_rewards,
+        alpha=0.2
+    )
+
+    folder = f"plots/{algorithm_name}"
+    os.makedirs(folder, exist_ok=True)
+
+    plt.axhline(y=0, color='red', linestyle='--', alpha=0.5, label='Zero Line')
+
+    plt.title(f"Algorithm {algorithm_name} - Grid {grid_idx} - {variant}")
+    plt.xlabel("Episode")
+    plt.ylabel("Average Reward")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(f"{folder}/{algorithm_name}_grid{grid_idx}_{variant}.png")
+    plt.close()
+
 
 
 

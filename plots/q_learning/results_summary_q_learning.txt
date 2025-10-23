@@ -1,60 +1,20 @@
-Grid 0 - no_decay: mean_last100=-54.87, std=61.44, mean_length=24.3, time=0.1s
+Grid 0 - no_decay: mean_last100=-62.91, std=53.97, mean_length=22.6, time=0.1s
 
-Grid 0 - with_decay: mean_last100=-64.28, std=53.93, mean_length=25.2, time=0.1s
+Grid 0 - with_decay: mean_last100=-58.71, std=46.82, mean_length=28.6, time=0.1s
 
-Grid 1 - no_decay: mean_last100=-111.69, std=23.81, mean_length=16.2, time=0.1s
+Grid 1 - no_decay: mean_last100=-115.21, std=10.21, mean_length=17.7, time=0.1s
 
-Grid 1 - with_decay: mean_last100=-114.56, std=11.50, mean_length=17.1, time=0.1s
+Grid 1 - with_decay: mean_last100=-113.89, std=10.96, mean_length=16.4, time=0.1s
 
-Grid 2 - no_decay: mean_last100=-117.83, std=13.09, mean_length=21.1, time=0.1s
+Grid 2 - no_decay: mean_last100=-117.17, std=14.03, mean_length=20.6, time=0.1s
 
-Grid 2 - with_decay: mean_last100=-118.25, std=14.28, mean_length=20.4, time=0.8s
+Grid 2 - with_decay: mean_last100=-117.55, std=13.72, mean_length=20.4, time=0.1s
 
-Grid 3 - no_decay: mean_last100=-106.22, std=5.74, mean_length=7.2, time=0.0s
+Grid 3 - no_decay: mean_last100=-106.04, std=4.67, mean_length=7.0, time=0.0s
 
-Grid 3 - with_decay: mean_last100=-106.06, std=4.71, mean_length=7.1, time=0.0s
+Grid 3 - with_decay: mean_last100=-105.48, std=3.73, mean_length=6.5, time=0.0s
 
-Grid 4 - no_decay: mean_last100=-94.12, std=9.71, mean_length=7.1, time=0.0s
+Grid 4 - no_decay: mean_last100=-94.63, std=10.19, mean_length=7.2, time=0.0s
 
-Grid 4 - with_decay: mean_last100=-95.06, std=10.04, mean_length=7.1, time=0.0s
-
-Grid 0 - no_decay: mean_last100=-53.93, std=63.95, mean_length=26.3, time=0.1s
-
-Grid 0 - with_decay: mean_last100=-58.65, std=59.34, mean_length=26.1, time=0.1s
-
-Grid 1 - no_decay: mean_last100=-114.09, std=11.45, mean_length=16.5, time=0.1s
-
-Grid 1 - with_decay: mean_last100=-114.31, std=11.20, mean_length=16.8, time=0.1s
-
-Grid 2 - no_decay: mean_last100=-120.03, std=15.98, mean_length=22.1, time=0.1s
-
-Grid 2 - with_decay: mean_last100=-114.75, std=20.70, mean_length=18.5, time=0.1s
-
-Grid 3 - no_decay: mean_last100=-105.56, std=4.08, mean_length=6.6, time=0.0s
-
-Grid 3 - with_decay: mean_last100=-105.92, std=4.88, mean_length=6.9, time=0.0s
-
-Grid 4 - no_decay: mean_last100=-95.00, std=9.74, mean_length=6.5, time=0.0s
-
-Grid 4 - with_decay: mean_last100=-95.31, std=10.44, mean_length=6.7, time=0.0s
-
-Grid 0 - no_decay: mean_last100=-61.44, std=49.72, mean_length=25.5, time=0.1s
-
-Grid 0 - with_decay: mean_last100=-67.02, std=45.95, mean_length=24.1, time=0.1s
-
-Grid 1 - no_decay: mean_last100=-113.64, std=10.53, mean_length=16.3, time=0.1s
-
-Grid 1 - with_decay: mean_last100=-113.47, std=10.35, mean_length=16.2, time=0.1s
-
-Grid 2 - no_decay: mean_last100=-116.00, std=10.90, mean_length=18.6, time=0.1s
-
-Grid 2 - with_decay: mean_last100=-117.95, std=12.97, mean_length=21.4, time=0.1s
-
-Grid 3 - no_decay: mean_last100=-106.04, std=4.32, mean_length=7.0, time=0.0s
-
-Grid 3 - with_decay: mean_last100=-106.08, std=4.89, mean_length=7.1, time=0.0s
-
-Grid 4 - no_decay: mean_last100=-94.95, std=10.58, mean_length=6.8, time=0.0s
-
-Grid 4 - with_decay: mean_last100=-95.45, std=9.67, mean_length=6.3, time=0.0s
+Grid 4 - with_decay: mean_last100=-94.72, std=10.37, mean_length=7.2, time=0.0s
 
