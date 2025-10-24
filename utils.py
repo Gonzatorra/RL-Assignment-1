@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from D_A_N_I_env import DaniEnv #import for analyze_reward_sensitivity
 import pandas as pd
+import seaborn as sns
 
 
 #-----------------------------------------------#
@@ -546,7 +547,7 @@ def load_best_params(filename="best_params.json"):
     if os.path.exists(filename):
         with open(filename, "r") as f:
             best_params = json.load(f)
-        print(f"Loaded best params from {filename}")
+        print(f"\nLoaded best params from {filename}")
         return best_params
     else:
         print(f"No file found at {filename}")
@@ -564,7 +565,7 @@ def load_best_params(filename="best_params.json"):
 #------Reward value tuning for algorithms-------#
 #-----------------------------------------------#
 
-def analyze_reward_sensitivity(algos):
+def analyze_reward_sensitivity(algos, slippery=False):
     """
     Analyzes how reward configurations affect the performance of algorithms
     """
@@ -659,25 +660,33 @@ def analyze_reward_sensitivity(algos):
 
     print("\n=== Reward Sensitivity Analysis ===")
 
+
     for config in reward_configs:
         print(f"Testing configuration: {config['name']}")
 
-        #Modify the environment with the new rewards
         env = DaniEnv()
         env.set_grid(grid_idx)
 
-        #Override step method to use our rewards
         def custom_step(action):
             i, j = env.agent_pos
+
+            # Si es slippery, elegir acción con desviación
+            if slippery:
+                slip_prob = 0.2
+                actions = [action, (action + 1) % 4, (action - 1) % 4]
+                probs = [1 - slip_prob, slip_prob / 2, slip_prob / 2]
+                action = np.random.choice(actions, p=probs)
+
+            # Movimiento determinista
             if action == 0 and i > 0: i -= 1
             if action == 1 and j < env.grid_size - 1: j += 1
             if action == 2 and i < env.grid_size - 1: i += 1
             if action == 3 and j > 0: j -= 1
             env.agent_pos = (i, j)
-            
+
             cell = env.grid[i, j]
             reward, done = 0, False
-            
+
             if cell == 'M':  
                 reward, done = config['meteorite'], True
             elif cell == 'G':  
@@ -687,11 +696,11 @@ def analyze_reward_sensitivity(algos):
                 env.grid[i, j] = 'N'
             else:  
                 reward = config['step']
-                
-            return env._get_state(), reward, done, False, {}
-        
-        env.step = custom_step
 
+            return env._get_state(), reward, done, False, {}
+
+        env.step = custom_step
+        
         #Test each algorithm - CORREGIDO
         for algo in algos:
             algo_name = algo.__name__
@@ -747,13 +756,9 @@ def summarize_sensitivity_results(results_df):
     if results_df is None or results_df.empty:
         print("No hay resultados para resumir")
         return
-    
-    print("\n" + "="*80)
-    print("RESUMEN DE RESULTADOS - ANÁLISIS DE SENSIBILIDAD")
-    print("="*80)
-    
-    # Mejores configuraciones por algoritmo
-    print("\nMEJORES CONFIGURACIONES POR ALGORITMO:")
+
+    #Best configurations by algorithm
+    print("\nBest configurations by algorithm:")
     print("-" * 50)
     
     for algo in results_df['algorithm'].unique():
@@ -761,20 +766,20 @@ def summarize_sensitivity_results(results_df):
         best_config = algo_data.loc[algo_data['mean_reward'].idxmax()]
         
         print(f"\n{algo.upper():<12}")
-        print(f"  Mejor configuración: {best_config['config']}")
-        print(f"  Recompensa promedio: {best_config['mean_reward']:.2f} ± {best_config['std_reward']:.2f}")
-        print(f"  Tasa de éxito: {best_config['success_rate']:.1%}")
-        print(f"  Pasos promedio: {best_config['mean_steps']:.1f}")
-    
-    # Configuración general más efectiva
+        print(f"  Best configuration: {best_config['config']}")
+        print(f"  Average reward: {best_config['mean_reward']:.2f} ± {best_config['std_reward']:.2f}")
+        print(f"  Success rate: {best_config['success_rate']:.1%}")
+        print(f"  Mean steps: {best_config['mean_steps']:.1f}")
+
+    #Overall best configuration
     overall_best = results_df.loc[results_df['mean_reward'].idxmax()]
-    print(f"\n{'CONFIGURACIÓN MÁS EFECTIVA GENERAL':<40}")
-    print(f"  Configuración: {overall_best['config']}")
-    print(f"  Algoritmo: {overall_best['algorithm']}")
-    print(f"  Recompensa: {overall_best['mean_reward']:.2f}")
-    
-    # Análisis de correlación
-    print(f"\n{'CORRELACIÓN RECOMPENSAS vs RENDIMIENTO':<40}")
+    print(f"\n{'OVERALL BEST CONFIGURATION':<40}")
+    print(f"  Configuration: {overall_best['config']}")
+    print(f"  Algorithm: {overall_best['algorithm']}")
+    print(f"  Reward: {overall_best['mean_reward']:.2f}")
+
+    #Correlation analysis
+    print(f"\n{'CORRELATION REWARDS vs PERFORMANCE':<40}")
     print("-" * 50)
     
     for reward_type in ['meteorite_reward', 'palm_reward', 'goal_reward', 'step_reward']:
@@ -783,3 +788,60 @@ def summarize_sensitivity_results(results_df):
         
         reward_name = reward_type.replace('_reward', '').title()
         print(f"  {reward_name:<12}: r = {correlation:7.3f} {significance}")
+
+
+
+
+def save_reward_plots(results_df, subfolder):
+    """
+    Genera y guarda plots de los resultados de análisis de sensibilidad.
+    
+    Parámetros:
+    - results_df: DataFrame con los resultados.
+    - subfolder: nombre del subdirectorio dentro de "plots".
+    """
+
+    #Create the folder if it does not exist
+    folder_path = os.path.join("plots", subfolder)
+    os.makedirs(folder_path, exist_ok=True)
+
+    # -----------------------------
+    # Barplot: reward per configuration and algorithm
+    plt.figure(figsize=(12,6))
+    sns.barplot(
+        data=results_df, 
+        x='config', 
+        y='mean_reward', 
+        hue='algorithm',
+        ci='sd'
+    )
+    plt.xticks(rotation=45)
+    plt.ylabel("Average Reward")
+    plt.title("Reward Comparison by Algorithm and Configuration")
+    plt.legend(title="Algorithm")
+    plt.tight_layout()
+    plt.savefig(os.path.join(folder_path, "reward_comparison.png"))
+    plt.close()
+
+    # -----------------------------
+    # 2. Scatter: success vs steps, size = reward
+    plt.figure(figsize=(10,6))
+    sns.scatterplot(
+        data=results_df,
+        x='mean_steps',
+        y='success_rate',
+        hue='algorithm',
+        size='mean_reward',
+        sizes=(50, 300),
+        alpha=0.8
+    )
+    plt.xlabel("Mean Steps")
+    plt.ylabel("Success Rate")
+    plt.title("Success Rate vs Mean Steps (size = avg reward)")
+    plt.legend(title="Algorithm", bbox_to_anchor=(1.05, 1), loc=2)
+    plt.tight_layout()
+    plt.savefig(os.path.join(folder_path, "success_vs_steps.png"))
+    plt.close()
+
+
+    print(f"Plots saved in folder: {folder_path}")

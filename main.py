@@ -1,5 +1,5 @@
 from D_A_N_I_env import DaniEnv
-from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize_with_optuna, save_best_params, load_best_params, plot_algorithm, read_summary_file, load_rewards, analyze_reward_sensitivity, summarize_sensitivity_results
+from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize_with_optuna, save_best_params, load_best_params, plot_algorithm, read_summary_file, load_rewards, analyze_reward_sensitivity, summarize_sensitivity_results, save_reward_plots
 from algorithms import q_learning, montecarlo, SARSA
 
 #import matplotlib
@@ -148,10 +148,17 @@ def main():
 
 
     #Reward value tuning para los algoritmos sobre un grid específico
+    print("\n=== Reward Sensitivity Analysis with Slippery off ===")
     results_df = analyze_reward_sensitivity(algos)
     summarize_sensitivity_results(results_df)
-
+    save_reward_plots(results_df, subfolder="reward_sensitivity")
     
+    
+    print("\n=== Reward Sensitivity Analysis with Slippery on ===")
+    results_slippery_df = analyze_reward_sensitivity(algos, slippery=True)
+    summarize_sensitivity_results(results_slippery_df)
+    save_reward_plots(results_slippery_df, subfolder="reward_sensitivity_slippery")
+
 
 if __name__ == "__main__":
     main()
