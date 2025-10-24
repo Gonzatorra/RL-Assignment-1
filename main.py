@@ -11,11 +11,11 @@ def main():
     #-----------------------------------------------#
     env = DaniEnv()
     episodes = 1000
-    alpha = 0.2
+    alpha = 0.1
     gamma = 0.95
     epsilon = 1.0
-    epsilon_decay = 0.05
-    epsilon_min =  0.998
+    epsilon_decay = 0.995
+    epsilon_min =  0.05
     seed = 100
     algos = [q_learning, montecarlo, SARSA]
     max_steps_episode = 100
