@@ -3,7 +3,7 @@ from utils import plot_rewards_comparison, plot_policy, run_experiment, optimize
 from algorithms import q_learning, montecarlo, SARSA
 
 #import matplotlib
-#matplotlib.use('Agg')
+#matplotlib.use('Agg') #Use when running optuna 
 
 def main():
     #-----------------------------------------------#
@@ -96,7 +96,7 @@ def main():
             seed=100,
             n_trials=20,
             max_steps_episode=200,
-            n_jobs=4  # usa 4 núcleos de CPU en paralelo
+            n_jobs=4  #Use 4 cores of CPU for parallel process
         )
         save_best_params(best_params)
 
