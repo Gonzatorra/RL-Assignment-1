@@ -59,32 +59,32 @@ Unlike Q-Learning, SARSA updates the Q-value using the true next action taken by
 For all algorithms, the Q-table is initialized to zeros, and the agent interacts with the environment for a fixed number of episodes. At each episode, the agent accumulates rewards, which are also recorded with the number of steps taken.
 
 ## Libraries
-alembic==1.17.0
-cloudpickle==3.1.1
-colorlog==6.10.1
-contourpy==1.3.3
-cycler==0.12.1
-Farama-Notifications==0.0.4
-fonttools==4.60.1
-greenlet==3.2.4
-gymnasium==1.2.1
-kiwisolver==1.4.9
-Mako==1.3.10
-MarkupSafe==3.0.3
-matplotlib==3.10.7
-numpy==2.3.4
-optuna==4.5.0
-packaging==25.0
-pandas==2.3.3
-pillow==12.0.0
-pygame==2.6.1
-pyparsing==3.2.5
-python-dateutil==2.9.0.post0
-pytz==2025.2
-PyYAML==6.0.3
-seaborn==0.13.2
-six==1.17.0
-SQLAlchemy==2.0.44
-tqdm==4.67.1
-typing_extensions==4.15.0
-tzdata==2025.2
+- alembic==1.17.0
+- cloudpickle==3.1.1
+- colorlog==6.10.1
+- contourpy==1.3.3
+- cycler==0.12.1
+- Farama-Notifications==0.0.4
+- fonttools==4.60.1
+- greenlet==3.2.4
+- gymnasium==1.2.1
+- kiwisolver==1.4.9
+- Mako==1.3.10
+- MarkupSafe==3.0.3
+- matplotlib==3.10.7
+- numpy==2.3.4
+- optuna==4.5.0
+- packaging==25.0
+- pandas==2.3.3
+- pillow==12.0.0
+- pygame==2.6.1
+- pyparsing==3.2.5
+- python-dateutil==2.9.0.post0
+- pytz==2025.2
+- PyYAML==6.0.3
+- seaborn==0.13.2
+- six==1.17.0
+- SQLAlchemy==2.0.44
+- tqdm==4.67.1
+- typing_extensions==4.15.0
+- tzdata==2025.2
